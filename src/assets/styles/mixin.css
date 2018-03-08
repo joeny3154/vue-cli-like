@@ -1,0 +1,18 @@
+/* mixin.css */
+
+.clearfix::after {
+  content: "clear";
+  display: block;
+  clear: both;
+  line-height: 0;
+  height: 0;
+  visibility: hidden;
+  zoom: 1;
+}
+
+#app {
+  color: red;
+}
+#app > p {
+  box-shadow: 0 0 0 #ccc;
+}

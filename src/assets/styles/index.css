@@ -1,0 +1,8 @@
+/* @import './mixin.css'; */
+#app {
+  text-align: center;
+}
+#app > p {
+  box-sizing: content-box;
+  color: pink;
+}
