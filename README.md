@@ -18,7 +18,7 @@
 
 ### 开发环境相关配置
 
-- [构建本地资源服务器]](./doc/webpackDevServer.md)
+- [构建本地资源服务器](./doc/webpackDevServer.md)
 
 - [启用热替换模块](./doc/启用热替换模块.md)
 
