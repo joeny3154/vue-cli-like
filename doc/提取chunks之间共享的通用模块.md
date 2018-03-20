@@ -1,9 +1,11 @@
-
-# 提取 chunks 之间共享的通用模块：`CommonsChunkPlugin`
+提取 chunks 之间共享的通用模块
+==========
 
 CommonsChunkPlugin 插件，是一个可选的用于建立一个独立文件(又称作 chunk)的功能，这个文件包括多个入口 chunk 的公共模块。通过将公共模块拆出来，最终合成的文件能够在最开始的时候加载一次，便存到缓存中供后续使用。这个带来速度上的提升，因为浏览器会迅速将公共的代码从缓存中取出来，而不是每次访问一个新页面时，再去加载一个更大的文件。
 
-###webpack`chunk`分类：分三种：`entry chunk`、`children chunk` 和 `commons chunk`
+### webpack`chunk`分类
+
+分三种：`entry chunk`、`children chunk` 和 `commons chunk`
 
 1. `entry chunk`: 入口文件（entry）也是 `chunk`
 
@@ -36,11 +38,7 @@ entry: {
   }
   new webpack.optimize.CommonsChunkPlugin({
     name: "vendor",
-    // filename: "vendor.js"
-    // (Give the chunk a different name)
     minChunks: Infinity,
-    // (with more entries, this ensures that no other module
-    //  goes into the vendor chunk)
   })
 ```
 
@@ -49,9 +47,7 @@ entry: {
 ``` js
 new webpack.optimize.CommonsChunkPlugin({
   // names: ["app", "subPageA"]// 选择 chunks，或者忽略该项设置以选择全部 chunks
-
   children: true, // 选择所有被选 chunks 的子 chunks
-
   // minChunks: 3, // 在提取之前需要至少三个子 chunk 共享这个模块
 })
 ```
@@ -66,22 +62,17 @@ new webpack.optimize.CommonsChunkPlugin({
   name: "app",
   // or
   names: ["app", "subPageA"]
-  // the name or list of names must match the name or names
-  // of the entry points that create the async chunks
-  children: true,
-  // (选择所有被选 chunks 的子 chunks)
-  async: true,
-  // (创建一个异步 公共chunk)
-  minChunks: 3,
-  // (在提取之前需要至少三个子 chunk 共享这个模块)
+  children: true, // (选择所有被选 chunks 的子 chunks)
+  async: true, // (创建一个异步 公共chunk)
+  minChunks: 3, // (在提取之前需要至少三个子 chunk 共享这个模块)
 })
 ```
 
-1. 将 vendor js （第三方库）分割成提取到独立的chunk
+### 独立第三方库
 
 这里讲两种方案：
 
-**第一种：webpack 官方示例方案**：明确指定第三方库`chunk`，并保证没其它的模块会打包进 `vendor chunk`中, eg:
+**第一种：明确指定第三方库**
 
 ``` js
 entry: {
@@ -92,36 +83,34 @@ entry: {
 plugins: [
   new webpack.optimize.CommonsChunkPlugin({
     name: "vendor",
-    // 随着 entry chunk 越来越多，这个配置保证没其它的模块会打包进 vendor chunk
     minChunks: Infinity,
   })
 ]
 ```
 
-*Tip:* `minChunks: Infinity`的作用示例解释是："随着 `entry chunk` 越来越多，这个配置保证没其它的模块会打包进 `vendor chunk`"。
-这句话如何理解：因为现在的配置除了`vendor chunk`外只有一个入口`chunk`,即 `app chunk`，也就是使用的模块都只可能被 1 个入口chunk（即`app chunk`） 共享，这导致数量不足2所以不会被`CommonsChunkPlugin`提取到`vendor chunk`中, 但随着`entry chunk`越来越多，其他`entry chunk`可能与`app chunk` 或者其他`entry chunk`之间会存在共享的模块，这时候这些`模块`会被n 个入口chunk 共享，这时候这些共享的模块就会被提取到`vendor chunk`中，导致`vendor chunk`越来越大，不仅仅包含我们明确指定第三方库，这不是我们希望的，而设置`minChunks: Infinity`可以解决问题
+`minChunks: Infinity`的作用：
+随着`entry chunk`越来越多，其他`entry chunk`可能与`app chunk` 或者其他`entry chunk`之间会存在共享的模块，这时候这些共享的模块就会被提取到`vendor chunk`中，导致`vendor chunk`越来越大，而且不仅仅包含我们明确指定第三方库，这不是我们希望的。
+而设置`minChunks: Infinity`会立即生成chunk，entry chunk间的再产生共享模块也不会打包进vendor chunk。
 
-**第二种：vue-cli 中使用的方案：**
+**第二种：隐式声明vendor**
 
-因为`CommonsChunkPlugin`配置中`name`选项如果传入已经存在的 chunk，被`CommonsChunkPlugin`提取的共享模块就会提取到已存在的chunk, 因此我们可以先在`entry`定义一个chunk为 `vendor`。eg:
+`entry`选项不需要声明vendor chunk:
 
 ``` js
 // webpack.base.conf.js
 entry: {
-  vendor: ['vue', 'vuex'],
   app: "./index"
 },
 ```
 
 `CommonsChunkPlugin`配置中`chunks`选项可以选择 chunks 的来源, 如果我们不忽略它，所有的 入口chunk (entry chunk) 都会被选择。
-我们做如下配置，使得被 `require` 的模块如果存在于 `node_modules` (即代表第三方库) 都提取到 `vendor` chunk 中，对所有的 入口chunk (entry chunk)生效。eg:
+我们做如下配置，使得所有entry chunk中`require` 的模块如果存在于 `node_modules` (即代表第三方库) 都提取到 `vendor` chunk 中：
 
 ``` js
 // webpack.prod.conf.js
 new webpack.optimize.CommonsChunkPlugin({
   name: 'vendor',
-  // minChunks 默认是设置 chunk 的数量。数量必须大于等于2，或者少于等于 chunks 的数量，minChunks: n 即表示被 require 的模块必须被 n 个入口 chunk 共享才会被提取
-  // 如果传入一个 function ，可以添加定制逻辑（默认是 chunk 的数量）
+  // minChunks传入一个 function ，可以添加定制逻辑
   minChunks (module) {
     return (
       module.resource &&
@@ -134,10 +123,10 @@ new webpack.optimize.CommonsChunkPlugin({
 })
 ```
 
-
 **`chunkhash`不稳定的问题**
 
 完成以上步骤后, webpack 构建后可以发现业务模块（`app.[chunkhash].js`）将明显减小，因为第三方库都提交到`vendor.[chunkhash].js`中。
+
 但存在一个问题：当更改业务代码时，重新构建后业务模块（`app.[chunkhash].js`）的`chunkhash`毋庸置疑的改变了，但`vendor.[chunkhash].js`的`chunkhash`也随着改变了，尽管 `vendor` 的内容没有实质变化，这不利于客户端的资源缓存，我们只希望改变的模块的`chunkhash`改变。
 
 `chunkhash`改变的原因：
@@ -164,7 +153,6 @@ script.src = __webpack_require__.p + "static/js/" + chunkId + "." + {"0":"4970f5
 `{"0":"4970f5e7e95c23dcfa7f","1":"8f138e48ba22ff687fa1"}`是以`chunkId`为`key`和`chunkhash`为`value`组成的一个对象, 业务代码的改变可能导致`chunkId`的分配改变，也可能只导致chunk对应的chunkhash改变，但结果都会导致整个`runtime`代码的更改。
 
 如果没有使用`CommonsChunkPlugin`, webpack 的`runtime`代码会存在于每个chunk 中，如果使用了`CommonsChunkPlugin` 默认会打包到由`CommonsChunkPlugin`生成的最后一个chunk中（如果我们不使用`name`选项，使用`names: []`， 即会打包到末尾的 `chunk` 中），所以我们只需要在抽离vender chunk后，再使用`CommonsChunkPlugin`提取一个`manifest` chunk(不一定要命名为`manifest`, 指定 `entry` 配置中未用到的名称即可)。eg:
-
 
 ``` js
 // webpack.prod.conf.js
@@ -195,14 +183,112 @@ new webpack.optimize.CommonsChunkPlugin({
 1. `manifest`的命名并不是固定的，可以指定其他命名，通常使用 `"runtime"/"manifest"`；
 2. `minChunks` 为 `Infinity` 时，就是单纯创建这个文件, 里面包含webpack runtime代码和模块清单，不会合并任何其他共用模块
 
-### 将 `manifest.js`写入到 html
+**将 `manifest.js`写入到 html**
 
 你可能发现了一个问题 —— manifest.js 实在是太小了，以至于不值得再为一个小 js 增加资源请求数量。
 因此我们可以引入另一个插件：`inline-manifest-webpack-plugin`。
 
 它可以将 manifest 转为内联在 html 内的 inline script。因为 manifest 经常随着构建而变化，写入到 html 中便不需要每次构建再下载新的 manifest 了，从而减少了一个小文件请求。此插件依赖 html-webpack-plugin 和 manifest 公共块，因此我们要配置 HtmlWebpackPlugin 且保持 manifest 的命名
 
-# 提取`children chunk`中的`common chunk`
+**稳定`module.id`**
+
+让我们向项目中再添加一个模块 `print.js`：
+
+``` js
+export default function print(text) {
+  console.log(text);
+};
+
+```
+
+``` js
+// src/index.js
+import Print from './print';
+Print('test')
+```
+
+再次运行构建，然后我们期望的是，只有 `main bundle` 的 `hash` 发生变化，然而我们可以看到这三个文件的 `hash` 都变化了。这是因为每个 `module.id` 会基于默认的解析顺序(resolve order)进行增量。也就是说，当解析顺序发生变化，ID 也会随之改变。因此，简要概括:
+
+- `main bundle` 会随着自身的新增内容的修改，而发生变化。
+
+- `vendor bundle` 会随着自身的 `module.id` 的修改，而发生变化。
+
+- `manifest bundle` 会因为当前包含一个新模块的引用，而发生变化
+
+第一个和最后一个都是符合预期的行为, 而 vendor 的 hash 因为`module.id`更改而发变化, 这是我们要修复的。那`module.id`是怎么修改的呢？
+
+chunk 的生成涉及到依赖解析和模块 id 分配，这是实质上没有变化的 chunk 文件无法稳定的`chunkhash`根源，默认模块的 id 是 webpack 根据依赖的收集顺序递增的正整数，这种 id 分配方式不太稳定，因为修改一个被依赖较多的模块，依赖这个模块的 chunks 内容均会跟着模块的新 id 一起改变。
+
+我们可以使用两个插件来解决：
+
+第一个插件是`NamedModulesPlugin`，将使用模块的相对路径代替数字id标识。虽然此插件有助于在开发过程中输出结果的可读性，然而执行时间会长一些。
+开发模式，它可以让 `webpack-dev-server` 和 HMR 进行热更新时在控制台输出模块路径而不是纯数字；生产构建环境，它可以避免因内容修改导致的 id 变化，从而实现持久化缓存。
+但它的缺点是 `module.id`替换为模块相对路径后，导致构建出来的 chunk 会充满各种路径，使文件增大；模块路径会泄露，可能导致安全问题。
+
+第二个选择是使用 `HashedModuleIdsPlugin`，仅用于生产环境, 此插件在`NamedModulesPlugin`的基础上根据模块的相对路径默认生成一个四位数的`hash`作为模块id(`module.id`)，不仅可以实现持久化缓存，同时还避免了它引起的两个问题（文件增大，路径泄露）。
+
+未使用`HashedModuleIdsPlugin`时， `module.id`为数字标识：
+
+``` js
+webpackJsonp([6],{
+/***/ 15:
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+// ...
+},[15]);
+```
+
+使用`HashedModuleIdsPlugin`后: 以四位数的`hash`作为`module.id`：
+
+``` js
+webpackJsonp([6], {
+  "3Di9":
+    (function (module, __webpack_exports__, __webpack_require__) {
+// ...
+}, ["Bau1"]);
+```
+
+**options:**
+
+`hashFunction`: 散列算法，默认为 'md5'。支持 Node.JS `crypto.createHash` 的所有功能。
+
+`hashDigest`: 在生成 hash 时使用的编码方式，默认为 'base64'。支持 Node.js `hash.digest` 的所有编码。
+
+`hashDigestLength`: 散列摘要的前缀长度，默认为 4
+
+eg:
+
+``` js
+new webpack.HashedModuleIdsPlugin({
+  hashFunction: 'sha256',
+  hashDigest: 'hex',
+  hashDigestLength: 20
+})
+```
+
+完整配置：
+
+``` js
+// ...
+new webpack.HashedModuleIdsPlugin(),
+new webpack.optimize.CommonsChunkPlugin({
+  name: 'vendor',
+  minChunks (module) {
+    return (
+      module.resource && /\.js$/.test(module.resource) && module.resource.indexOf(
+        path.join(__dirname, '../node_modules')
+      ) === 0
+    )
+  }
+}),
+new webpack.optimize.CommonsChunkPlugin({
+  name: 'manifest',
+  minChunks: Infinity
+}),
+```
+
+现在，不管再添加任何新的本地依赖，对于每次构建，`vendor hash` 都保持一致。
+
+### 提取`children chunk`中的`common chunk`
 
 使用代码拆分功能，一个 chunk 的多个子 chunk 会有公共的依赖。为了防止重复，可以将这些公共模块移入父 chunk。这会减少总体的大小，但会对首次加载时间产生不良影响。
 
@@ -212,7 +298,7 @@ new webpack.optimize.CommonsChunkPlugin({
 }),
 ```
 
-# 异步加载`children chunk`中的`common chunk`
+### 异步加载`children chunk`中的`common chunk`
 
 与上面的类似，但是并非将公共模块移动到父 chunk（增加初始加载时间），而是使用新的异步加载的额外公共chunk。当下载额外的 chunk 时，它将自动并行下载。
 

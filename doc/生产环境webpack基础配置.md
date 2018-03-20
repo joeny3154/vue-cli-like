@@ -1,3 +1,6 @@
+生产环境基础配置
+=====
+
 先实现基础配置，代码如下：
 
 ``` js
@@ -35,9 +38,15 @@ const webpackConfig = merge(baseWebpackConfig, {
 module.exports = webpackConfig
 ```
 
-tip： `hash vs chunkhash`。在 webpack 里，我们可以通过设置 `hash/chunkhash` 来自动更新文件名.主要区别如下：
-`hash`: `build-specific` ，即每次编译都不同——适用于开发阶段。
-`chunkhash`: `chunk-specific`，是根据每个 chunk 的内容计算出的 hash——适用于生产。
+**`hash vs chunkhash`**
+
+在 webpack 里，我们可以通过设置 `hash/chunkhash` 来自动更新文件名.主要区别如下：
+
+- `hash`: `build-specific` ，即每次编译都不同, 适用于开发阶段。
+
+- `chunkhash`: `chunk-specific`，是根据每个 chunk 的内容计算出的 hash, 适用于生产。
+
+### build脚本
 
 webpack 提供了 Node.js API，可以在 Node.js 运行时下直接使用, 我们只需要写一个`node.js`脚本(即`build/build.js`), 安装并导入webpack 模块后, 导入的 `webpack` 函数需要传入一个 webpack 配置对象，当同时传入**回调函数**时就会执行 `webpack compiler`(webpack 编译器)，类似这样:
 
@@ -54,7 +63,7 @@ webpack({
 });
 ```
 
-*Tip*: 如果你不向 `webpack` 执行函数传入回调函数，就会得到一个 `webpack Compiler` 实例。你可以通过它手动触发 `webpack` 执行器，或者是让它执行构建并监听变更。和 `CLI API` 很类似。`Compiler` 实例提供了两个方法：`.run(callback)`, `.watch(watchOptions, handler)`, 具体可查看[这里](https://doc.webpack-china.org/api/node/#webpack-)
+如果你不向 `webpack` 执行函数传入回调函数，就会得到一个 `webpack Compiler` 实例。你可以通过它手动触发 `webpack` 执行器，或者是让它执行构建并监听变更。和 `CLI API` 很类似。`Compiler` 实例提供了两个方法：`.run(callback)`, `.watch(watchOptions, handler)`, 具体可查看[这里](https://doc.webpack-china.org/api/node/#webpack-)
 
 
 我们具体实现一下`build/build.js`, 并额外增加`ora`、`rimraf` 和 `chalk` 模块完善此脚本的功能：

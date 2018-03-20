@@ -1,37 +1,36 @@
-图片、媒体资源、字体等loader配置
+常用loader配置
 =========
 
-webpack 支持把 `require` 图片、音视频、字体等资源, 通过设置`limit`还可以在文件大小（单位 byte, 即字节）低于指定的限制时，可以返回一个 DataURL
+loader的配置中，我们把css 和 `.vue`文件的加载配置放到一起，先把其他一些静态资源的加载器配置了。
 
-安装loader: `npm i --save-dev url-loader file-loader`，*`url-loader` 依赖 `file-loader`*
+之前已经设置了打包后资源都输出到`dist`目录下，现在目标是把较大的文件资源我们就存放在`dist/static/`目录下，并按资源分类建立子目录存放，比如images资源我们就打包到`dist/static/images`下，比较小的资源文件直接转换为 DataURL，这样可以减少请求次数。
 
-`file-loader` 将文件输出到输出目录并返回 public URL, eg: `"/public/path/0dcbbaa7013869e351f.png"`
+这需要使用`url-loader`，`file-loader`来实现：
+
+`file-loader` 将文件输出到输出目录并返回 public URL, 如 `"/public/path/0dcbbaa7013869e351f.png"`；
 
 `url-loader` 功能类似于 `file-loader`，但是在文件大小（单位 byte）低于指定的限制时（设置`options.limit`选项），可以返回一个 DataURL。
 
-
-![.png转成DataURL](./images/6.jpeg)
-
-在`build/webpack.base.conf.js`文件`rules`添加如下配置：
-
 ``` js
-// assetsSubDirectory：资源文件根目录（path）/发布目录 （publicPath）下的子目录
 const assetsSubDirectory = 'static'
+const assetsPath = function (_path) {
+  // path.posix 属性提供了 path 方法针对 POSIX 的实现
+  return path.posix.join(assetsSubDirectory, _path)
+}
 {
   test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
   loader: 'url-loader',
   options: {
-    // 小于 10000 byte 打包到js中
     limit: 10000,
-    // path.posix 属性提供了 path 方法针对 POSIX 的实现
-    name: path.posix.join(assetsSubDirectory, 'img/[name].[hash:7].[ext]') // static/img/[name].[hash:7].[ext]
+    name: assetsPath('img/[name].[hash:7].[ext]')
   }
-},
+}
 ```
 
-webpack 会将打包后的资源存在`output.path` 目录下, 这里我们指定的是根目录下的 `dist`目录(`path.resolve(__dirname, '../dist')`), 除js以外的静态资源会根据 `output.publicPath` 配置将图片等这些静态资源存放到对应的文件夹下，上面 assetsSubDirectory设置为 static, 
-打包后的文件路径就是 `output.path/output.publicPath/output.assetsSubDirectory/options.name`,
-由于开发环境和生产环境下可能需要做不同的配置，我们把`assetsRoot`(即：`output.path`配置)/`publicPath` 和 `assetsSubDirectory`添加到`config/index.js`中：
+![.png转成DataURL](./images/6.jpeg)
+
+
+bundle资源输出路径，静态资源路径，发布路径等配置需要独立出来，我们创建config模块并区分开发、生产环境：
 
 ``` js
 module.exports = {
@@ -46,38 +45,6 @@ module.exports = {
     publicPath: '/',
     assetsSubDirectory: 'static'
   }
-}
-```
-
-并对之前的配置做相应的调整：
-
-``` js
-// webpack.base.conf.js
-output: {
-  path: config.build.assetsRoot,
-  filename: '[name].js',
-  // 为何console.log(process.env.NODE_ENV)
-  publicPath: process.env.NODE_ENV === 'production'
-    ? config.build.assetsPublicPath
-    : config.dev.assetsPublicPath
-},
-```
-``` js
-// webpack.dev.conf.js
-devServer: {
-  // ...
-  publicPath: config.dev.assetsPublicPath,
-},
-```
-
-**注意：**上面publicPath 配置中使用的 `process.env.NODE_ENV` 是通过设置node的环境变量标识 `process.env.NODE_ENV`获得的，eg: 指定为测试环境`process.env.NODE_ENV = 'testing'`、生产环境：`process.env.NODE_ENV === 'production'`，这样以实现不同环境变量启用不同的配置
-
-通过`webpack.DefinePlugin`定义的全局常量，只能在待编译的模块中使用，如`src/index.js`、`.vue`文件等，以实现对不同环境下构建产生不同行为,eg:
-
-``` js
-// src/index.js
-if (process.env.NODE_ENV === 'development') {
-  console.log('Development log')
 }
 ```
 
@@ -97,24 +64,7 @@ exports.assetsPath = function (_path) {
   return path.posix.join(assetsSubDirectory, _path)
 ```
 
-*Tip*：`path` 模块的默认操作会根据 Node.js 应用程序运行的操作系统的不同而变化。 比如，当运行在 Windows 操作系统上时，path 模块会认为使用的是 Windows 风格的路径。
-比如，对 Windows 文件路径 `C:\temp\myfile.html` 使用 `path.basename()` 函数，运行在 POSIX 上与运行在 Windows 上会产生不同的结果，eg:
-
-``` js
-// 在 POSIX 上:
-path.basename('C:\\temp\\myfile.html'); // 返回: 'C:\\temp\\myfile.html'
-
-// 在 Windows 上:
-path.basename('C:\\temp\\myfile.html'); // 返回: 'myfile.html'
-```
-要想在任何操作系统上处理 POSIX 文件路径时获得一致的结果，可以使用 `path.posix`(反之可以使用 `path.win32`)
-
-``` js
-// 在 POSIX 和 Windows 上
-path.posix.basename('/tmp/myfile.html'); // 均返回: 'myfile.html'
-```
-
-**媒体文件、字体的`loader`配置类似，如下：**
+- 其他
 
 ``` js
 {

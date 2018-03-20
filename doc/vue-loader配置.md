@@ -1,17 +1,31 @@
-编译 vue 文件
+vue-loader配置
 =====
 
-`npm i --save vue vue-router`
+要处理`.vue`文件我们需要添加`vue-loader`。
 
-src目录下修改`index.js`,并添加`App.vue`组件, 代码如下
-
-`src/index.js`:
+添加`vue-loader`需要提前安装这`css-loader`和`vue-template-compiler`，先简单写一个vue组件并运行起应用。
 
 ``` js
+rules: [
+  // ...
+  {
+    test: /\.vue$/,
+    loader: 'vue-loader',
+    options: {
+      loaders: {
+        css: ['vue-style-loader',
+          { loader: 'css-loader' }
+        ]
+      }
+    }
+  }
+]
+```
+
+``` js
+// src/index.js
 import Vue from 'vue'
 import App from './App.vue'
-
-Vue.config.productionTip = false
 
 /* eslint-disable no-new */
 new Vue({
@@ -21,9 +35,8 @@ new Vue({
 })
 ```
 
-`src/App.vue`:
-
 ``` html
+<!-- src/App.vue -->
 <template>
   <div id="app">
     <p>{{msg}}</p>
@@ -48,31 +61,11 @@ export default {
 </style>
 ```
 
-到这一步骤会发现提示：`You may need an appropriate loader to handle this file type.`, 表示没有处理`.vue`文件的加载器(loader)。
 
-我们需要添加`vue-loader`, 需要提前安装这些依赖：`npm i --save-dev vue-loader css-loader vue-template-compiler`
 
-*Tip*:`vue-loader` 依赖 `css-loader` 、 `vue-template-compiler`
 
-``` js
-rules: [
-  // ...
-  {
-    test: /\.vue$/,
-    loader: 'vue-loader',
-    options: {
-      loaders: {
-        css: ['vue-style-loader',
-          { loader: 'css-loader', options: { sourceMap: false } }
-        ]
-      }
-    }
-  },
-]
-```
-
-`css-loader` 的作用是解释(interpret) `@import` 和 `url()` ，会 `import/require()` 后再解析(resolve)它们。
-引用资源（如images、fonts等）可以交由`file-loader`和 `url-loader`处理, 下面是一些配置示例，更多`css-loader`配置选项[查看这里](https://doc.webpack-china.org/loaders/css-loader/#import)
+`css-loader` 可以解读(interpret)样式代码中的`@import` 和 `url()`，然后会`import/require()`后再解析(resolve)它们。
+如果`import/require`到的是引用资源（如images、fonts等）将交由`file-loader`和 `url-loader`处理, 下面是一些配置示例，更多`css-loader`配置选项[查看这里](https://doc.webpack-china.org/loaders/css-loader/#import)
 
 ``` js
 {
@@ -87,48 +80,9 @@ rules: [
 }
 ```
 
-`vue-style-loader` 是一个基于`style-loader`的分支。`style-loader`与之类似，与`css-loader`链接起来，将 `css-loader` 的结果（CSS字符串）作为`<style>`标签动态插入到文档中。
-
-Tip: `vue-loader` 默认引入并依赖了 `postcss-loader`，但默认不做任何特殊处理
+`vue-style-loader` 是一个基于`style-loader`的分支。与`style-loader`类似，与`css-loader`链接起来使用可以将 `css-loader` 的结果（CSS字符串）作为`<style>`标签动态插入到文档中。
 
 上面我们完成了**`*.vue` 文件的`<style>`中样式处理**
-
-
-`sourceMap`的配置需要区别开发、生产环境，我们在`config/index.js`添加`sourceMap`,
-
-``` js
-{
-  dev: {
-    cssSourceMap: false,
-  },
-  build: {
-    // production 下是生成 sourceMap
-    productionSourceMap: true,
-  }
-}
-
-```
-
-更改为：
-
-``` js
-const isProduction = process.env.NODE_ENV === 'production'
-const sourceMapEnabled = isProduction ? config.build.productionSourceMap : config.dev.cssSourceMap
-rules: [
-  // ...
-  {
-    test: /\.vue$/,
-    loader: 'vue-loader',
-    options: {
-      loaders: {
-        css: ['vue-style-loader',
-          { loader: 'css-loader', options: { sourceMap: sourceMapEnabled } }
-        ]
-      }
-    }
-  },
-]
-```
 
 # Vue的运行时构建方式 vs 独立构建
 
@@ -164,8 +118,6 @@ vue-loader 支持使用非默认语言，比如 CSS 预处理器，预编译的 
 
 `npm i --save-dev less less-loader`
 
-*`less-loader` 依赖 `less`*
-
 在`build/webpack.base.conf.js`的`vue-loader`的`options.loaders`添加`less`选项，如下：
 
 ``` js
@@ -193,30 +145,19 @@ eg:
 ``` js
 loaders: {
   css: ['vue-style-loader',
-    { loader: 'css-loader', options: { sourceMap: sourceMapEnabled } }
+    { loader: 'css-loader'}
   ],
   less: ['vue-style-loader',
-    { loader: 'css-loader', options: { sourceMap: sourceMapEnabled } },
-    { loader: 'less-loader', options: { sourceMap: sourceMapEnabled } }
+    { loader: 'css-loader'},
+    { loader: 'less-loader'}
   ],
   sass: ['vue-style-loader',
-    { loader: 'css-loader', options: { sourceMap: sourceMapEnabled } },
-    {
-      loader: 'sass-loader',
-      options: { indentedSyntax: true, sourceMap: sourceMapEnabled }
-    }
-  ],
-  scss: ['vue-style-loader',
-    { loader: 'css-loader', options: { sourceMap: sourceMapEnabled } },
-    { loader: 'sass-loader', options: { sourceMap: sourceMapEnabled } }
+    { loader: 'css-loader'},
+    { loader: 'sass-loader'}
   ],
   stylus: ['vue-style-loader',
-    { loader: 'css-loader', options: { sourceMap: sourceMapEnabled } },
-    { loader: 'stylus-loader', options: { sourceMap: sourceMapEnabled } }
+    { loader: 'css-loader' },
+    { loader: 'stylus-loader' }
   ],
-  styl: ['vue-style-loader',
-    { loader: 'css-loader', options: { sourceMap: sourceMapEnabled } },
-    { loader: 'stylus-loader', options: { sourceMap: sourceMapEnabled } }
-  ]
-},
+}
 ```

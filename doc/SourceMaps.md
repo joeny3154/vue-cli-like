@@ -1,3 +1,6 @@
+SourceMaps
+====
+
 开发环境与开发环境需要使用不同的SourceMaps方案，所以配置到`config/index.js` 中，
 
 ``` js

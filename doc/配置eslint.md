@@ -1,6 +1,7 @@
 
 配置eslint
 =======
+
 `npm i --save-dev eslint eslint-loader eslint-friendly-formatter`
 
 1. 配置loader
@@ -27,33 +28,16 @@ rules: [
   }
 ]
 ```
+因为之前使用到的`babel-loader`会修改js源文件, `eslint-loader`中`enforce: 'pre'`的作用是强制配置成前置loader，以便能检查源文件，而不是被`babel-loader`修改后的文件。
 
-**独立出配置文件**：为了独立出开发和生产环境下的配置选项，我们在项目根目录添加`config/index.js`文件:
-
-``` js
-module.exports = {
-  dev: {
-    // 是否在浏览器console中显示eslint的error级别信息，
-    // 这里我们希望都已经警告级别来显示，所以设置为false
-    showEslintErrorsInOverlay: false
-  },
-  build: {
-    
-  }
-}
-```
-
-# .eslintrc.js
-
-ESLint 支持多种格式的配置文件：
-这里我们选择使用JavaScript格式，在项目根目录新建一个`.eslintrc.js`模块，然后输出一个配置对象。
+ESLint 支持多种格式的配置文件，这里我们选择使用JavaScript格式，在项目根目录新建一个`.eslintrc.js`模块，然后输出一个配置对象。
 
 ``` js
 /* .eslintrc.js */
 module.exports = {
   // ESLint可以层叠配置，把离检测的文件最近的 `.eslintrc`文件作为最高优先级，然后还会去父目录里的配置文件，这里设置"root": true，找到此文件后会停止在父级目录中寻找
   root: true,
-  // ESLint 默认使用Espree作为其解析器, Babel-ESLint 是对Babel解析器的包装使其与 ESLint 兼容
+  // ESLint 默认使用Espree作为其解析器, Babel-ESLint 是对Babel解析器的包装使其与 ESLint 兼容，否则es6的语言校验可能会导致报错
   parser: 'babel-eslint',
   // 解析器配置选项
   parserOptions: {
@@ -73,7 +57,6 @@ module.exports = {
     'html'
   ],
   // 添加自定义的规则
-
   rules: {
     // "off" 或 0: 关闭规则; 
     // "warn" 或 1: 开启规则，警告级别(不会导致程序退出); 

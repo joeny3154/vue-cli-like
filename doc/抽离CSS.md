@@ -1,5 +1,10 @@
+抽离CSS
+===
 
-在`module.rules`中添加`ExtractTextPlugin`配置，eg：
+之前loader配置中css被打包到js bundle中, js执行过程后会通过`<style>`标签将css注入到页面中，但这样会导致js中因为存在css代码而体积过大。通过`ExtractTextPlugin`可以解决这个问题，使用它抽离css成独立的文件。
+
+在`module.rules`中调用`ExtractTextPlugin.extract`方法：
+
 ``` js
 // webpack.prod.conf.js
 const ExtractTextPlugin = require('extract-text-webpack-plugin')
@@ -36,11 +41,10 @@ const webpackConfig = merge(baseWebpackConfig, {
 
 ```
 
-完成上面步骤还不能抽离CSS, 需要在`plugins`选项添加`ExtractTextPlugin`插件，eg:
+完成上面步骤还不能抽离CSS, 需要在`plugins`选项添加`ExtractTextPlugin`插件：
 
 ``` js
 // webpack.prod.conf.js
-
 plugins: [
   new ExtractTextPlugin({
     filename: utils.assetsPath('css/[name].[contenthash].css'),
@@ -80,6 +84,7 @@ const sourceMapEnabled = isProduction ? config.build.productionSourceMap : confi
   }
 },
 ```
+
 这样我就实现了`*.vue`中的样式抽离，但这样写会影响开发环境的`webpack.dev.conf.js`配置，因为`webpack.base.config.js`是生产和开发通用的配置
 所以我们需要动态实现`vue-loader`的配置。在此之前，我们先比较一下两种环境下我们需要的`vue-loader` 配置：
 
@@ -177,8 +182,6 @@ exports.cssLoaders = function (options) {
 ```
 
 实现了`cssLoaders`方法，我们创建`build/vue-loader.conf.js`模块并暴露完整的`vue-loader`的配置，eg:
-
-
 
 ``` js
 'use strict'
@@ -302,13 +305,16 @@ module: {
 },
 ```
 
-# 压缩提取出来的CSS: `OptimizeCSSPlugin`
+### 压缩提取出来的CSS
 
 我们可以发现`build`之后CSS虽然已经抽离成独立的css文件中，但还存在两个问题：
 
 1. 没有被压缩，体积过大。
 
-2. 还有`extract-text-webpack-plugin`处理CSS时，可能出现重复条目。首先指出同一个入口模块及其子模块`import`同样的**样式文件**并不会出现bundle中存在重复的模块内容，存在重复条目指的是不同的样式文件中可能存在同样的条目，比如两个css文件中都有`.clearfix { ... }`,使用`extract-text-webpack-plugin` 来bundles CSS后，bundle 就会出现重复的`.clearfix { ... }`条目。
+2. 还有`extract-text-webpack-plugin`处理CSS时，可能出现重复条目。
+
+首先说明一下，同一个入口模块和其子模块`import`同一个样式文件,比如`reset.css`，`extract-text-webpack-plugin`提取并合并一个css文件后，该文件中并不会存在多个`reset.css`的内容。
+存在重复条目指的是多个不同的样式文件中可能存在同样的条目，比如两个css文件中都有`.clearfix { ... }`, 使用`extract-text-webpack-plugin` 抽离并合并为一个css文件后，就会出现重复的`.clearfix { ... }`条目。我们希望的是这些重复条目只需保留一条即可，其余是需要剔除的。
 
 这些都可以使用`optimize-css-assets-webpack-plugin`插件来解决：
 
